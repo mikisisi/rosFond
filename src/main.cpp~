@@ -1,0 +1,156 @@
+/*************************************************************************************************
+FOND 4 MOTEURS : A server that receives an (X,Y,Zmomentum) and sets a corresponding thrust output
+*************************************************************************************************/
+
+#include <iostream>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+
+#ifdef WIN32
+#pragma comment(lib,"sdl.lib")
+#pragma comment(lib,"sdlmain.lib")
+#endif
+
+
+
+void error( char *msg )
+{
+    printf(msg);
+    perror(  msg );
+    exit(1);        }
+
+void sendData( int sockfd, int x )
+{
+    int n;
+    char buffer[32];
+
+    sprintf( buffer, "%d\n", x );
+    if ( (n = write( sockfd, buffer, strlen(buffer) ) ) < 0 )
+        error( const_cast<char *>( "ERROR writing to socket") );
+    buffer[n] = '\0';
+}
+
+int getData( int sockfd )
+{
+    char buffer[32];
+    int n;
+    if ( (n = read(sockfd,buffer,31) ) < 0 )
+        error( const_cast<char *>( "ERROR reading from socket") );
+    buffer[n] = '\0';
+    return atoi( buffer );
+}
+
+
+int main(int argc, char *argv[])
+{
+    //   int a2dBuff[3] = {510,5110,510}; // destine a contenir les valeurs des axes X Y Z
+
+
+
+/************************************* this part is taken from http://cs.smith.edu/dftwiki/index.php/Tutorial:_Client/Server_on_the_Raspberry_Pi tutorial  */
+   printf( "using port #%d\n", portno );
+
+     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+     if (sockfd < 0)
+         error( const_cast<char *>("ERROR opening socket") );
+     bzero((char *) &serv_addr, sizeof(serv_addr));
+
+     serv_addr.sin_family = AF_INET;
+     serv_addr.sin_addr.s_addr = INADDR_ANY;
+     serv_addr.sin_port = htons( portno );
+     if (bind(sockfd, (struct sockaddr *) &serv_addr,
+              sizeof(serv_addr)) < 0)
+       error( const_cast<char *>( "ERROR on binding" ) );
+     listen(sockfd,5);
+     clilen = sizeof(cli_addr);
+
+     //--- infinite wait on a connection ---
+     while ( 1 ) {
+        printf( "waiting for new client...\n" );
+        if ( ( newsockfd = accept( sockfd, (struct sockaddr *) &cli_addr, (socklen_t*) &clilen) ) < 0 )
+            error( const_cast<char *>("ERROR on accept") );
+        printf( "opened new communication with client\n" );
+        while ( 1 ) {
+             //---- wait for a number from client ---
+             mode = getData( newsockfd );
+             printf( "got %d\n", mode );
+             if ( data < 0 )
+                break;
+
+             mode = 2*( mode );
+
+             //--- send new data back ---
+             printf( "sending back %d\n", mode );             sendData( newsockfd, mode );
+        }
+        close( newsockfd );
+
+        //--- if -2 sent by client, we can quit ---
+        if ( mode == -2 )
+          break;
+     }
+     return 0;
+//}
+//
+//else
+//{
+//     printf("\nLECTURE DE L INTENSITEEEE ");
+//
+//
+// sleepMs(10);
+//
+//          /*************          LECTURE ET ENVOI DES DONNEES           **************/
+//        ///INTENSITE
+//        for(a2dChannel=0; a2dChannel<3; a2dChannel++)
+//        {
+//            data[0] = 1;  //  first byte transmitted -> start bit
+//            data[1] = 0b10000000 |( ((a2dChannel & 7) << 4)); // second byte transmitted -> (SGL/DIF = 1, D2=D1=D0=0)
+//            data[2] = 0; // third byte transmitted....don't care
+//            joystickSpi.spiWriteRead(data, sizeof(data) );
+//            a2dVal[a2dChannel] = 0;
+//            a2dVal[a2dChannel] = (data[1]<< 8) & 0b1100000000; //merge data[1] & data[2] to get result
+//            a2dVal[a2dChannel] |=  (data[2] & 0xff);
+//            cout << "The " <<coutRes[a2dChannel]<< "is:" << a2dVal[a2dChannel] ;
+//            cout << "Sending ...." ;
+//            sendData ( newsockfd, a2dVal[a2dChannel]+a2dChannel );
+//            cout << ".... Done !" ;
+//
+//        }
+//
+//                ///TEMPERATURE/*
+//        thermometre.readReg(0x05,i2cBuffer);
+//                temp = i2cBuffer & 0x0FFF;
+//                temp /=  16.0;
+//                if (i2cBuffer & 0x1000) temp -= 256;
+//          printf("\nTemperature: %f",temp);
+//
+//
+//
+//
+//
+//
+//}
+//
+//        }
+
+//
+//        ///we set the motors still when the client disconnects
+//        adafruit.setPWM(channelActif,0,MOTEURSTOP);
+//        adafruit.setPWM(channelActif+1,0,MOTEURSTOP);
+//        adafruit.setPWM(channelActif+2,0,MOTEURSTOP);
+//        adafruit.setPWM(channelActif+3,0,MOTEURSTOP);
+//        close( newsockfd );
+//        //--- if -2 sent by client, we can quit ---
+//        if ( mode == -2 )
+////            break;
+//    }
+//}    close( sockfd );
+//
+//    return 0;
+}
